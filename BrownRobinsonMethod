@@ -1,0 +1,146 @@
+#include <iostream>
+#include <vector>
+
+class Player{
+ public:
+   std::vector<int32_t> favorite_strategy_;
+   int32_t value_ = 0;
+   std::vector<int32_t> this_value_;
+};
+
+int32_t findMin(std::vector<int32_t> A) {
+  int32_t min = A[0];
+  int32_t index_min = 0;
+  for (auto i = 0; i < A.size(); i++) {
+    if (A[i] < min) {
+      min = A[i];
+      index_min = i;
+    }
+  }
+  return index_min;
+}
+
+int32_t findMax(std::vector<int32_t> A) {
+  int32_t max = A[0];
+  int32_t index_max = 0;
+  for (auto i = 0; i < A.size(); i++) {
+    if (A[i] > max) {
+      max = A[i];
+      index_max = i;
+    }
+  }
+  return index_max;
+}
+
+std::pair<int32_t, int32_t> findMaxMin(std::vector<std::vector<int32_t>> strategies) {
+  std::vector<int32_t> index_min;
+  std::vector<int32_t> value_min;
+  for (auto i = 0; i < strategies.size(); i++) {
+    index_min.push_back(findMin(strategies[i]));
+    value_min.push_back(strategies[i][findMin(strategies[i])]);
+  }
+  int32_t index_max_min = findMax(value_min);
+  return std::make_pair(index_min[index_max_min], value_min[index_max_min]);//get string with strategy of A player
+}
+
+int main() {
+
+  int32_t k;
+  std::cout << "Enter the number of iterations!" << std::endl;
+  std::cin >> k;
+
+  int32_t n;
+  std::cout << "Enter the size of matrix!" << std::endl;
+  std::cin >> n;
+
+  std::vector<std::vector<int32_t>> strategies(n);
+  int32_t buf;
+  std::cout << "Enter your game(matrix)!" << std::endl;
+  for (auto i = 0; i < n; i++) {
+    for (auto j = 0; j < n; j++) {
+      //in >> buf;
+      std::cin >> buf;
+      strategies[i].push_back(buf);
+    }
+  }
+
+  std::pair<int32_t, int32_t> first_strategy_A = findMaxMin(strategies);
+
+  Player player_A, player_B;
+  player_A.favorite_strategy_.push_back(first_strategy_A.first);
+  player_A.value_ += first_strategy_A.second;
+
+  for (auto i = 0; i < n; i++) {
+    player_B.this_value_.push_back(strategies[i][first_strategy_A.first]);
+    player_A.this_value_.push_back(strategies[first_strategy_A.first][i]);
+  }
+
+  player_B.favorite_strategy_.push_back(player_A.favorite_strategy_[0]);
+  player_B.value_ += strategies[findMax(player_B.this_value_)][first_strategy_A.first];
+
+  k--;//это для 10 итераций, потом сделать ввод кол-ва итераций, а тут k--;
+
+  std::vector<double> max_v, min_v, mid_v;
+  max_v.push_back(static_cast<double>(player_B.value_));
+  min_v.push_back(static_cast<double>(player_A.value_));
+  mid_v.push_back((max_v[0] + min_v[0])/2);
+
+  for (auto i = 0; i < k; i++) {
+    //ход А
+    player_A.favorite_strategy_.push_back(findMax(player_B.this_value_));
+    for (auto j = 0; j < player_A.this_value_.size(); j++) {
+      player_A.this_value_[j] += strategies[player_A.favorite_strategy_[i + 1]][j];
+    }
+    //ход Б
+    player_B.favorite_strategy_.push_back(findMin(player_A.this_value_));
+    for (auto j = 0; j < player_B.this_value_.size(); j++) {
+      player_B.this_value_[j] += strategies[j][player_B.favorite_strategy_[i + 1]];
+    }
+    //оценки цены игры на данной итерации
+    min_v.push_back((static_cast<double>(player_A.this_value_[findMin(player_A.this_value_)]))/(i + 2));
+    max_v.push_back((static_cast<double>(player_B.this_value_[findMax(player_B.this_value_)])/(i + 2)));
+    mid_v.push_back((max_v[i + 1] + min_v[i + 1]) / 2);
+  }
+
+  double count = 0;
+
+  std::vector<double> strategies_A;
+  for (auto i = 0; i < n; i++) {
+    for (auto j = 0; j < k + 1; j++) {
+      if (player_A.favorite_strategy_[j] == i) {
+        count += 1.0;
+      }
+    }
+    strategies_A.push_back(count / (k + 1));
+    count = 0;
+  }
+
+  std::vector<double> strategies_B;
+  for (auto i = 0; i < n; i++) {
+    for (auto j = 0; j < k + 1; j++) {
+      if (player_B.favorite_strategy_[j] == i) {
+        count += 1.0;
+      }
+    }
+    strategies_B.push_back(count / (k + 1));
+    count = 0;
+  }
+
+  std::cout << "Optimal strategy of player A: (" << strategies_A[0];
+  for (auto i = 1; i < strategies_A.size(); i++) {
+    std::cout << "; " << strategies_A[i];
+  }
+  std::cout << ");" << std::endl << "Optimal strategy of player B: (" << strategies_B[0];
+  for (auto i = 1; i < strategies_B.size(); i++) {
+    std::cout << "; " << strategies_B[i];
+  }
+  std::cout << ")." << std::endl;
+
+  std::cout << mid_v[k];
+
+  std::cout << "Enter any char for exit!" << std::endl;
+  char f;
+  std::cin >> f;
+
+  return 0;
+}
